@@ -1,0 +1,70 @@
+# BitePlate staff directory — the source of truth that Keycloak federates and
+# that the in-app Staff directory reads via LdapRecord.
+
+dn: dc=biteplate,dc=local
+objectClass: dcObject
+objectClass: organization
+o: BitePlate
+dc: biteplate
+
+dn: ou=people,dc=biteplate,dc=local
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=biteplate,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+# --- Staff -------------------------------------------------------------------
+dn: uid=amorgan,ou=people,dc=biteplate,dc=local
+objectClass: inetOrgPerson
+uid: amorgan
+cn: Alex Morgan
+sn: Morgan
+mail: alex.morgan@biteplate.local
+userPassword: password
+
+dn: uid=mrossi,ou=people,dc=biteplate,dc=local
+objectClass: inetOrgPerson
+uid: mrossi
+cn: Marco Rossi
+sn: Rossi
+mail: marco.rossi@biteplate.local
+userPassword: password
+
+dn: uid=slee,ou=people,dc=biteplate,dc=local
+objectClass: inetOrgPerson
+uid: slee
+cn: Sam Lee
+sn: Lee
+mail: sam.lee@biteplate.local
+userPassword: password
+
+dn: uid=dkerr,ou=people,dc=biteplate,dc=local
+objectClass: inetOrgPerson
+uid: dkerr
+cn: Dana Kerr
+sn: Kerr
+mail: dana.kerr@biteplate.local
+userPassword: password
+
+# --- Role groups (mapped to Keycloak realm roles / BitePlate roles) ----------
+dn: cn=manager,ou=groups,dc=biteplate,dc=local
+objectClass: groupOfNames
+cn: manager
+member: uid=amorgan,ou=people,dc=biteplate,dc=local
+
+dn: cn=head_chef,ou=groups,dc=biteplate,dc=local
+objectClass: groupOfNames
+cn: head_chef
+member: uid=mrossi,ou=people,dc=biteplate,dc=local
+
+dn: cn=waiter,ou=groups,dc=biteplate,dc=local
+objectClass: groupOfNames
+cn: waiter
+member: uid=slee,ou=people,dc=biteplate,dc=local
+
+dn: cn=cashier,ou=groups,dc=biteplate,dc=local
+objectClass: groupOfNames
+cn: cashier
+member: uid=dkerr,ou=people,dc=biteplate,dc=local
