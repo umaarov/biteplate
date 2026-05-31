@@ -18,6 +18,7 @@ enum OrderStatus: string
     case InPreparation = 'in_preparation';
     case Ready = 'ready';
     case Served = 'served';
+    case Paid = 'paid';
     case Cancelled = 'cancelled';
 
     public function label(): string
@@ -28,19 +29,26 @@ enum OrderStatus: string
             self::InPreparation => 'In preparation',
             self::Ready => 'Ready to serve',
             self::Served => 'Served',
+            self::Paid => 'Paid',
             self::Cancelled => 'Cancelled',
         };
     }
 
-    /** @return list<OrderStatus> */
+    /**
+     * @return list<OrderStatus>
+     *
+     * A bill can be settled (→ Paid) from any active state, since a table may pay
+     * before the food is formally marked "served".
+     */
     public function allowedNext(): array
     {
         return match ($this) {
             self::Draft => [self::SentToKitchen, self::Cancelled],
-            self::SentToKitchen => [self::InPreparation, self::Cancelled],
-            self::InPreparation => [self::Ready, self::Cancelled],
-            self::Ready => [self::Served, self::Cancelled],
-            self::Served, self::Cancelled => [],
+            self::SentToKitchen => [self::InPreparation, self::Paid, self::Cancelled],
+            self::InPreparation => [self::Ready, self::Paid, self::Cancelled],
+            self::Ready => [self::Served, self::Paid, self::Cancelled],
+            self::Served => [self::Paid],
+            self::Paid, self::Cancelled => [],
         };
     }
 
@@ -63,6 +71,6 @@ enum OrderStatus: string
 
     public function isTerminal(): bool
     {
-        return $this === self::Served || $this === self::Cancelled;
+        return $this === self::Paid || $this === self::Cancelled;
     }
 }

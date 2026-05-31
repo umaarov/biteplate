@@ -86,10 +86,11 @@ final class FloorBoard extends Component
         }
     }
 
-    public function render(TableService $tables): View
+    public function render(TableService $tables, CurrentStaff $currentStaff): View
     {
         return view('livewire.floor.floor-board', [
             'tables' => $tables->floor(),
+            'currentStaff' => $currentStaff->staff(),
         ]);
     }
 }

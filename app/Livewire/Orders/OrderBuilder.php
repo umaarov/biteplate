@@ -7,6 +7,7 @@ namespace App\Livewire\Orders;
 use App\Application\Auth\CurrentStaff;
 use App\Application\Contracts\MenuRepository;
 use App\Application\Contracts\OrderRepository;
+use App\Application\Services\ComboCatalog;
 use App\Application\Services\MenuCustomizationCatalog;
 use App\Application\Services\OrderService;
 use App\Domain\Shared\DomainException;
@@ -38,6 +39,9 @@ final class OrderBuilder extends Component
     /** @var list<string> */
     public array $avoid = [];
 
+    /** @var list<string> */
+    public array $subs = [];
+
     public string $special = '';
 
     public int $qty = 1;
@@ -56,12 +60,18 @@ final class OrderBuilder extends Component
         $this->run(fn (OrderService $o) => $o->addItem($this->orderId, $sku, 1));
     }
 
+    public function addCombo(string $key): void
+    {
+        $this->run(fn (OrderService $o) => $o->addCombo($this->orderId, $key, 1));
+    }
+
     public function openCustomize(string $sku, string $name): void
     {
         $this->selectedSku = $sku;
         $this->selectedName = $name;
         $this->extras = [];
         $this->avoid = [];
+        $this->subs = [];
         $this->special = '';
         $this->qty = 1;
     }
@@ -81,6 +91,7 @@ final class OrderBuilder extends Component
         $this->run(function (OrderService $o) use ($sku): void {
             $o->addItem($this->orderId, $sku, max(1, $this->qty), [
                 'extras' => $this->extras,
+                'subs' => $this->subs,
                 'avoid' => $this->avoid,
                 'special' => $this->special,
             ]);
@@ -119,16 +130,29 @@ final class OrderBuilder extends Component
         }
     }
 
-    public function render(MenuRepository $menu, OrderRepository $orders, MenuCustomizationCatalog $catalog): View
+    public function render(MenuRepository $menu, OrderRepository $orders, MenuCustomizationCatalog $catalog, ComboCatalog $combos): View
     {
-        $grouped = Collection::make($menu->active(config('biteplate.branch')))
-            ->groupBy(fn ($item) => $item->category);
+        $items = Collection::make($menu->active(config('biteplate.branch')));
+        $grouped = $items->groupBy(fn ($item) => $item->category);
+        $priceBySku = $items->keyBy('sku');
+
+        $combosForView = array_map(function (array $combo) use ($priceBySku): array {
+            $minor = 0;
+            foreach ($combo['skus'] as $sku) {
+                $minor += (int) ($priceBySku[$sku]->price_minor ?? 0);
+            }
+            $combo['price_minor'] = (int) round($minor * (1 - $combo['discount'] / 100));
+
+            return $combo;
+        }, $combos->all());
 
         return view('livewire.orders.order-builder', [
             'menuGroups' => $grouped,
             'order' => $orders->find($this->orderId),
             'extrasCatalog' => $catalog->extras(),
+            'substitutionOptions' => $catalog->substitutions(),
             'allergenOptions' => $catalog->allergenOptions(),
+            'combos' => $combosForView,
         ]);
     }
 }

@@ -87,10 +87,21 @@ final class BillingService
         return $bill;
     }
 
-    /** Settle up: clear and free the table. */
+    /** Settle up: mark the table's orders paid, then clear and free the table. */
     public function close(int $tableNumber): void
     {
+        foreach ($this->orders->billableForTable($tableNumber) as $order) {
+            $order->markPaid();
+            $this->orders->save($order);
+        }
+
         $table = $this->tables->find($tableNumber) ?? throw new DomainException("Table {$tableNumber} not found.");
+
+        // Walk the State machine to a clean table whether the cashier issued the
+        // bill first (Awaiting Bill) or is settling straight from Occupied.
+        if ($table->status() === \App\Domain\Tables\TableStatus::Occupied) {
+            $table->requestBill();
+        }
         $table->clear();
         $table->free();
         $this->tables->save($table);

@@ -68,6 +68,12 @@ final class EloquentOrderRepository implements OrderRepository
                     'allergens' => array_map(static fn (Allergen $a) => $a->value, $component->allergens()),
                     'notes' => array_values(array_unique($notes)),
                     'summary' => $component->summary(),
+                    'tickets' => array_map(static fn ($t) => [
+                        'item' => $t->item,
+                        'station' => $t->station->value,
+                        'notes' => $t->notes,
+                        'allergens' => array_map(static fn (Allergen $a) => $a->value, $t->allergens),
+                    ], $tickets),
                 ]);
             }
         });
@@ -83,6 +89,16 @@ final class EloquentOrderRepository implements OrderRepository
 
         $items = [];
         foreach ($model->items as $row) {
+            $tickets = array_map(
+                static fn (array $t) => new \App\Domain\Shared\KitchenTicket(
+                    $t['item'],
+                    KitchenStation::from($t['station']),
+                    $t['notes'] ?? [],
+                    array_map(static fn (string $a) => Allergen::from($a), $t['allergens'] ?? []),
+                ),
+                $row->tickets ?? [],
+            );
+
             $component = new PersistedMenuComponent(
                 name: $row->name,
                 description: '',
@@ -92,6 +108,7 @@ final class EloquentOrderRepository implements OrderRepository
                 category: MenuCategory::from($row->category),
                 notes: $row->notes ?? [],
                 summaryText: $row->summary,
+                tickets: $tickets,
             );
             $items[] = new DomainOrderItem($component, $row->quantity);
         }

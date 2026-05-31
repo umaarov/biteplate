@@ -9,6 +9,7 @@ use App\Domain\History\OrderHistoryLog;
 use App\Domain\History\OrderLineRecord;
 use App\Domain\History\OrderRecord;
 use App\Domain\Kitchen\Chef;
+use App\Domain\Kitchen\Command\ExpediteOrderCommand;
 use App\Domain\Kitchen\Command\PrepareOrderCommand;
 use App\Domain\Kitchen\KitchenQueue;
 use App\Domain\Menu\Beverage;
@@ -116,6 +117,26 @@ final class DomainPatternsTest extends TestCase
 
         $queue->undoLast();
         self::assertSame(OrderStatus::SentToKitchen, $order->status());
+    }
+
+    public function test_command_expedite_reprioritises_and_undo_restores_position(): void
+    {
+        $first = new Order('O-A', 1, 'EMP');
+        $second = new Order('O-B', 2, 'EMP');
+        $third = new Order('O-C', 3, 'EMP');
+
+        $queue = new KitchenQueue();
+        $queue->enqueue($first);
+        $queue->enqueue($second);
+        $queue->enqueue($third);
+
+        // Table 3 is in a hurry — expedite it to the front (reprioritise).
+        $queue->run(new ExpediteOrderCommand($queue, $third));
+        self::assertSame('O-C', $queue->board()[0]->id());
+
+        // Undo drops it back into its original slot — reprioritising is non-destructive.
+        $queue->undoLast();
+        self::assertSame(['O-A', 'O-B', 'O-C'], array_map(static fn (Order $o) => $o->id(), $queue->board()));
     }
 
     public function test_singleton_history_is_shared_and_iterable(): void

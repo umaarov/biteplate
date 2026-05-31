@@ -13,7 +13,9 @@ use App\Domain\History\OrderLineRecord;
 use App\Domain\History\OrderRecord;
 use App\Domain\Menu\Customization\AllergenRequirement;
 use App\Domain\Menu\Customization\ExtraAddOn;
+use App\Domain\Menu\Customization\SideSubstitution;
 use App\Domain\Menu\Customization\SpecialPreparation;
+use App\Domain\Menu\ComboMeal;
 use App\Domain\Menu\MenuCategory;
 use App\Domain\Menu\MenuComponent;
 use App\Domain\Ordering\Order;
@@ -38,6 +40,7 @@ final class OrderService
         private readonly OrderHistoryRepository $history,
         private readonly MenuCustomizationCatalog $catalog,
         private readonly OrderObserverRegistrar $observers,
+        private readonly ComboCatalog $combos,
     ) {
     }
 
@@ -63,6 +66,29 @@ final class OrderService
         $order = $this->require($orderId);
         $component = $this->buildComponent($sku, $customizations);
         $order->addItem($component, $quantity);
+        $this->orders->save($order);
+
+        return $order;
+    }
+
+    /**
+     * Add a combo / set meal as a single Composite line. Each child is built
+     * through the Factory (so it carries its real station and allergens) and
+     * nested into a {@see ComboMeal}; the order then treats the whole deal
+     * exactly like a single dish.
+     */
+    public function addCombo(string $orderId, string $comboKey, int $quantity = 1): Order
+    {
+        $spec = $this->combos->find($comboKey) ?? throw new DomainException("Unknown combo {$comboKey}.");
+
+        $order = $this->require($orderId);
+
+        $combo = new ComboMeal($spec['name'], $spec['description'], $spec['discount']);
+        foreach ($spec['skus'] as $sku) {
+            $combo->add($this->menu->leaf($sku));
+        }
+
+        $order->addItem($combo, max(1, $quantity));
         $this->orders->save($order);
 
         return $order;
@@ -116,6 +142,19 @@ final class OrderService
                 $extra['label'],
                 Money::fromMinor($extra['surcharge_minor']),
                 $extra['allergen'] !== null ? Allergen::from($extra['allergen']) : null,
+            );
+        }
+
+        foreach ($customizations['subs'] ?? [] as $subKey) {
+            $sub = $this->catalog->findSubstitution($subKey);
+            if ($sub === null) {
+                continue;
+            }
+            $component = new SideSubstitution(
+                $component,
+                $sub['from'],
+                $sub['to'],
+                Money::fromMinor($sub['delta_minor']),
             );
         }
 

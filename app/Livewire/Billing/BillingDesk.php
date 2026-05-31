@@ -37,10 +37,13 @@ final class BillingDesk extends Component
 
     public ?string $error = null;
 
+    public ?string $message = null;
+
     public function mount(OrderRepository $orders): void
     {
         if ($this->table !== null) {
-            $this->orderId = $orders->billableForTable($this->table)[0]?->id();
+            $first = $orders->billableForTable($this->table)[0] ?? null;
+            $this->orderId = $first?->id();
         }
     }
 
@@ -48,17 +51,21 @@ final class BillingDesk extends Component
     {
         $this->orderId = $orderId;
         $this->error = null;
+        $this->message = null;
     }
 
     public function finalize(CurrentStaff $current, BillingService $billing): void
     {
+        $this->error = null;
+        $this->message = null;
+
         if (! $this->guardClose($current) || $this->orderId === null) {
             return;
         }
 
         try {
-            $billing->finalize($this->orderId, $this->strategy, $this->tip ?: null, max(1, $this->splitWays));
-            session()->flash('status', "Bill issued for {$this->orderId}.");
+            $bill = $billing->finalize($this->orderId, $this->strategy, $this->tip ?: null, max(1, $this->splitWays));
+            $this->message = "Bill issued for {$this->orderId} — total {$bill->total->format()}. Take payment, then Settle & clear the table.";
         } catch (DomainException $e) {
             $this->error = $e->getMessage();
         }
@@ -66,6 +73,9 @@ final class BillingDesk extends Component
 
     public function closeTable(int $number, CurrentStaff $current, BillingService $billing): void
     {
+        $this->error = null;
+        $this->message = null;
+
         if (! $this->guardClose($current)) {
             return;
         }
@@ -73,7 +83,7 @@ final class BillingDesk extends Component
         try {
             $billing->close($number);
             $this->orderId = null;
-            session()->flash('status', "Table {$number} settled and cleared.");
+            $this->message = "Table {$number} settled and cleared.";
         } catch (DomainException $e) {
             $this->error = $e->getMessage();
         }

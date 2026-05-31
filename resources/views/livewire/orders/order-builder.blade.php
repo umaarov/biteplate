@@ -22,6 +22,27 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {{-- Menu --}}
         <div class="lg:col-span-2 space-y-6">
+            {{-- Combos & set meals (Composite) --}}
+            @if (!empty($combos))
+                <div>
+                    <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">Combos &amp; Set Meals</h2>
+                    <div class="overflow-hidden rounded-xl border border-indigo-100 bg-indigo-50/40 divide-y divide-indigo-100">
+                        @foreach ($combos as $combo)
+                            <div class="flex items-center gap-3 px-4 py-3">
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm font-medium text-neutral-900">{{ $combo['name'] }}
+                                        <span class="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">−{{ rtrim(rtrim(number_format($combo['discount'], 1), '0'), '.') }}%</span>
+                                    </div>
+                                    <div class="truncate text-xs text-neutral-400">{{ $combo['description'] }}</div>
+                                </div>
+                                <div class="text-sm font-semibold text-neutral-700">{{ $money($combo['price_minor']) }}</div>
+                                <button wire:click="addCombo('{{ $combo['key'] }}')" class="{{ $btnPrimary }}">Add deal</button>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             @foreach ($menuGroups as $categoryValue => $items)
                 <div>
                     <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
@@ -111,6 +132,21 @@
                         @endforeach
                     </div>
                 </div>
+
+                @if (!empty($substitutionOptions))
+                    <div class="mt-4">
+                        <div class="mb-1 text-xs font-medium text-neutral-500">Substitutions</div>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            @foreach ($substitutionOptions as $sub)
+                                <label class="flex items-center gap-2 rounded-md border border-neutral-200 px-2.5 py-1.5 text-sm">
+                                    <input type="checkbox" wire:model="subs" value="{{ $sub['key'] }}" class="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="flex-1 text-neutral-700">{{ $sub['from'] }} → {{ $sub['to'] }}</span>
+                                    <span class="text-xs text-neutral-400">{{ $sub['delta_minor'] === 0 ? 'no charge' : '+£'.number_format($sub['delta_minor'] / 100, 2) }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 <div class="mt-4">
                     <div class="mb-1 text-xs font-medium text-neutral-500">Allergen requirements (no…)</div>

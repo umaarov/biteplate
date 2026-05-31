@@ -25,8 +25,9 @@ use App\Domain\Shared\Money;
 final class PersistedMenuComponent implements MenuComponent, HasCategory
 {
     /**
-     * @param list<Allergen> $allergens
-     * @param list<string>   $notes
+     * @param list<Allergen>      $allergens
+     * @param list<string>        $notes
+     * @param list<KitchenTicket> $tickets  Full restored ticket set (a combo has many); empty falls back to a single ticket.
      */
     public function __construct(
         private readonly string $name,
@@ -37,6 +38,7 @@ final class PersistedMenuComponent implements MenuComponent, HasCategory
         private readonly MenuCategory $category,
         private readonly array $notes = [],
         private readonly ?string $summaryText = null,
+        private readonly array $tickets = [],
     ) {
     }
 
@@ -67,6 +69,10 @@ final class PersistedMenuComponent implements MenuComponent, HasCategory
 
     public function kitchenTickets(): array
     {
+        if ($this->tickets !== []) {
+            return $this->tickets;
+        }
+
         return [new KitchenTicket($this->name, $this->station, $this->notes, $this->allergens)];
     }
 

@@ -11,7 +11,7 @@ class OrderItem extends Model
 {
     protected $fillable = [
         'order_id', 'name', 'quantity', 'unit_price_minor', 'currency',
-        'category', 'station', 'is_drink', 'allergens', 'notes', 'summary',
+        'category', 'station', 'is_drink', 'allergens', 'notes', 'summary', 'tickets',
     ];
 
     protected $casts = [
@@ -20,6 +20,7 @@ class OrderItem extends Model
         'is_drink' => 'boolean',
         'allergens' => 'array',
         'notes' => 'array',
+        'tickets' => 'array',
     ];
 
     public function order(): BelongsTo

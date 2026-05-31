@@ -94,9 +94,10 @@ php artisan biteplate:demo
 
 ### Suggested walkthrough
 1. **Floor** → *Seat* a party at a free table (watch the State transition Free → Occupied).
-2. *Take order* → add a dish, hit **Customise** (extras + "no gluten" + special request — the
-   Decorator chain), then **Send to kitchen**. Watch the 🔔 notification bell (Observer).
-   Order something with shellfish/nuts to trigger the **allergy alert**.
+2. *Take order* → add an à la carte dish or a **Combo / Set Meal** (Composite); hit **Customise**
+   on any dish for extras, **substitutions** ("Fries → Sweet Potato Fries") and "no gluten" +
+   special request (the Decorator chain), then **Send to kitchen**. Watch the 🔔 notification bell
+   (Observer). Order something with shellfish/nuts to trigger the **allergy alert**.
 3. **Kitchen** (as Head Chef/Manager) → *Prepare* → *Mark ready*; hit **Undo** (Command undo).
 4. **Billing** (as Cashier/Manager) → pick the bill, switch the **pricing strategy** live, set a
    tip and split — then *Issue bill* and *Settle & clear table*.

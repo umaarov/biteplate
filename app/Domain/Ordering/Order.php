@@ -232,6 +232,12 @@ final class Order implements OrderSubject
         $this->transitionTo(OrderStatus::Served);
     }
 
+    /** Settle the bill: the order is paid and leaves the active board. */
+    public function markPaid(): void
+    {
+        $this->transitionTo(OrderStatus::Paid);
+    }
+
     public function cancel(string $reason): void
     {
         if (trim($reason) === '') {
